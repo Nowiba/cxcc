@@ -31,25 +31,36 @@
         const fileInput = document.getElementById('fileInput');
         const imagePreview = document.getElementById('imagePreview');
         const uploadButton = document.getElementById('uploadBarcodeButton');
+        const startScanButton = document.getElementById('startScanButton');
         let scannedBarcode = "";
 
         // Start scanning when the button is clicked
-        document.getElementById('startScanButton').addEventListener('click', () => {
-            document.getElementById('startScanButton').style.display = 'none'; // Hide the button
+        startScanButton.addEventListener('click', () => {
+            startScanButton.style.display = 'none'; // Hide the button
             videoElement.style.display = 'block'; // Show the video element
             startScanning(); // Start the scanning process
         });
 
         function startScanning() {
-            codeReader.decodeFromVideoDevice(undefined, videoElement, (result, err) => {
-                if (result) {
-                    scannedBarcode = result.text;
-                    barcodeResult.textContent = `Barcode scanned: ${scannedBarcode}`;
-                    form.style.display = "block"; // Show the form for product name and price
-                } else if (err) {
-                    barcodeResult.textContent = `Error scanning barcode: ${err}`;
-                }
-            });
+            // Request camera permission and start video stream
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+                .then(function(stream) {
+                    videoElement.srcObject = stream; // Attach the video stream to the video element
+                    videoElement.play();
+                    codeReader.decodeOnceFromVideoDevice(undefined, videoElement, (result, err) => {
+                        if (result) {
+                            scannedBarcode = result.text;
+                            barcodeResult.textContent = `Barcode scanned: ${scannedBarcode}`;
+                            form.style.display = "block"; // Show the form for product name and price
+                        } else if (err) {
+                            barcodeResult.textContent = `Error scanning barcode: ${err}`;
+                        }
+                    });
+                })
+                .catch(function(err) {
+                    console.error("Error accessing camera: ", err);
+                    barcodeResult.textContent = "Unable to access the camera.";
+                });
         }
 
         // Handle file input for barcode image upload
@@ -99,8 +110,7 @@
             background-color: #f4f4f9;
             color: #333;
             text-align: center;
-            direction: ltr;
-            margin: 20px;
+            margin: 40px;
         }
 
         h1 {
@@ -111,7 +121,7 @@
         button {
             background-color: #4CAF50;
             color: white;
-            padding: 15px 32px;
+            padding: 12px 24px;
             border: none;
             cursor: pointer;
             border-radius: 5px;
@@ -134,7 +144,7 @@
         input[type="text"], input[type="number"], input[type="file"] {
             width: 100%;
             padding: 12px;
-            margin: 8px 0;
+            margin: 10px 0;
             border-radius: 5px;
             border: 1px solid #ddd;
             font-size: 16px;
@@ -148,17 +158,13 @@
         }
 
         #productForm {
-            max-width: 500px;
-            margin: 20px auto;
+            width: 600px;
+            margin: 40px auto;
             text-align: left;
             background-color: #fff;
             padding: 20px;
             border-radius: 10px;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        }
-
-        p {
-            font-size: 16px;
         }
 
         #message {
@@ -170,13 +176,40 @@
         .input-group {
             margin: 10px 0;
         }
+
+        .video-container {
+            margin-top: 30px;
+        }
+
+        .instructions {
+            font-size: 18px;
+            color: #555;
+        }
+
+        .upload-button {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        #startScanButton {
+            display: block;
+            margin-top: 20px;
+        }
+
+        #barcodeResult {
+            margin-top: 15px;
+            font-size: 18px;
+            font-weight: normal;
+            color: #777;
+        }
     </style>
 </head>
 <body>
 
     <h1>Add Product by Barcode</h1>
     <button id="startScanButton">Start Scanning</button>
-    <video id="video"></video>
+    <video id="video" class="video-container"></video>
     <p id="barcodeResult">Scan barcode...</p>
 
     <form id="productForm" style="display:none;">
@@ -190,7 +223,7 @@
             <input type="number" id="price" placeholder="Enter price" required>
         </div>
 
-        <div class="input-group">
+        <div class="input-group upload-button">
             <button type="button" id="uploadBarcodeButton">Upload Barcode Image</button>
             <input type="file" id="fileInput" accept="image/*" style="display:none;">
         </div>
@@ -204,3 +237,4 @@
 
 </body>
 </html>
+
